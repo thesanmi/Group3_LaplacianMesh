@@ -57,7 +57,8 @@ class MeshViewerCanvas(BasicMeshCanvas):
         self.colorChoices = {} #Elements will be key-value paris (idx, np.array([R, G, B]))
         self.colorCurrentIdx = -1
         self.colorPickTexID = None
-        
+        self.colorPosVBO = None
+        self.colorColorVBO = None
     
     def displayMeshFacesCheckbox(self, evt):
         self.displayMeshFaces = evt.Checked()
@@ -195,6 +196,23 @@ class MeshViewerCanvas(BasicMeshCanvas):
     def doInterpolateColors(self, evt):
         print "TODO"
     
+    def updateColorChoiceBuffers(self):
+        #Remake color and vertex buffers
+        if self.colorPosVBO:
+            self.colorPosVBO.delete()
+        if self.colorColorVBO:
+            self.colorColorVBO.delete()
+        N = len(self.colorChoices)
+        Pos = np.zeros((N, 3))
+        Colors = np.zeros((N, 3))
+        i = 0
+        for idx in self.colorChoices:
+            Pos[i, :] = self.mesh.VPos[idx, :]
+            Colors[i, :] = self.colorChoices[idx]
+            i += 1
+        self.colorPosVBO = vbo.VBO(np.array(Pos, dtype=np.float32))
+        self.colorColorVBO = vbo.VBO(np.array(Colors, dtype=np.float32))
+    
     def drawMeshStandard(self):
         glEnable(GL_LIGHTING)
         glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, [0.8, 0.8, 0.8, 1.0])
@@ -230,7 +248,8 @@ class MeshViewerCanvas(BasicMeshCanvas):
                 self.GUIState = STATE_NORMAL
             self.Refresh()
         elif self.GUIState == STATE_CHOOSELAPLACEVERTICES:
-            if self.GUISubstate == COLORPICK_WAITING:
+            if self.GUISubstate == CHOOSELAPLACE_WAITING:
+                self.camera.gotoCameraFrame()
                 glDisable(GL_LIGHTING)
                 glPointSize(10)
                 glBegin(GL_POINTS)
@@ -258,6 +277,7 @@ class MeshViewerCanvas(BasicMeshCanvas):
             elif self.GUISubstate == CHOOSELAPLACE_PICKVERTEX:
                 glClearColor(0.0, 0.0, 0.0, 0.0)
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+                self.camera.gotoCameraFrame()
                 self.mesh.renderGLIndices()
                 pixel = glReadPixels(self.MousePos[0], self.MousePos[1], 1, 1, GL_RGBA, GL_UNSIGNED_BYTE)
                 [R, G, B, A] = [int(pixel.encode("hex")[i*2:(i+1)*2], 16) for i in range(4)]
@@ -275,33 +295,34 @@ class MeshViewerCanvas(BasicMeshCanvas):
                 
         elif self.GUIState == STATE_CHOOSECOLORVERTICES:
             if self.GUISubstate == COLORPICK_WAITING:
-                glDisable(GL_LIGHTING)
-                glBegin(GL_POINTS)
-                for idx in self.colorChoices:
-                    P = self.mesh.VPos[self.mesh.vertices[idx].ID, :]
-                    C = self.colorChoices[idx]
-                    glColor3f(C[0], C[1], C[2])
-                    P = self.laplacianConstraints[idx]
-                    if idx == self.colorCurrentIdx:
-                        glPointSize(20)
-                    else:
-                        glPointSize(10)
-                    glVertex3f(P[0], P[1], P[2])
-                glEnd()
-                #self.drawMeshStandard()
-                self.mesh.renderGLIndices()
+                self.drawMeshStandard()
                 if not self.colorPickTexID:
                     self.colorPickTexID = getColorPickingTexture()
                 drawColorPicker(self.size.width, self.size.height, self.colorPickTexID)
+                self.camera.gotoCameraFrame()
+                if self.colorPosVBO:
+                    glDisable(GL_LIGHTING)
+                    glEnableClientState(GL_VERTEX_ARRAY)
+                    glEnableClientState(GL_COLOR_ARRAY)
+                    self.colorPosVBO.bind()
+                    glVertexPointerf(self.colorPosVBO)
+                    self.colorColorVBO.bind()
+                    glColorPointerf(self.colorColorVBO)
+                    glPointSize(10)
+                    glDrawArrays(GL_POINTS, 0, len(self.colorChoices))
+                    self.colorPosVBO.unbind()
+                    self.colorColorVBO.unbind()
+                    glDisableClientState(GL_COLOR_ARRAY)
+                    glDisableClientState(GL_VERTEX_ARRAY)
                 
             elif self.GUISubstate == COLORPICK_PICKVERTEX:
                 glClearColor(0.0, 0.0, 0.0, 0.0)
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+                self.camera.gotoCameraFrame()
                 self.mesh.renderGLIndices()
                 pixel = glReadPixels(self.MousePos[0], self.MousePos[1], 1, 1, GL_RGBA, GL_UNSIGNED_BYTE)
                 [R, G, B, A] = [int(pixel.encode("hex")[i*2:(i+1)*2], 16) for i in range(4)]
                 idx = extractFromRGBA(R, G, B, 0) - 1
-                print "idx = ", idx
                 if idx >= 0 and idx < len(self.mesh.vertices):
                     if idx in self.colorChoices:
                         #De-select if it's already selected
@@ -310,7 +331,7 @@ class MeshViewerCanvas(BasicMeshCanvas):
                     else:
                         self.colorChoices[idx] = np.array([1.0, 1.0, 1.0])
                         self.colorCurrentIdx = idx
-                    print self.colorChoices
+                    self.updateColorChoiceBuffers()
                 self.GUISubstate = COLORPICK_WAITING
                 self.Refresh()
             
@@ -322,6 +343,7 @@ class MeshViewerCanvas(BasicMeshCanvas):
                     pixel = glReadPixels(self.MousePos[0], self.MousePos[1], 1, 1, GL_RGBA, GL_UNSIGNED_BYTE)
                     [R, G, B, A] = [int(pixel.encode("hex")[i*2:(i+1)*2], 16) for i in range(4)]
                     self.colorChoices[self.colorCurrentIdx] = np.array(R, G, B)
+                    self.updateColorChoiceBuffers()                    
                 self.GUISubstate = COLORPICK_WAITING
                 self.Refresh()
                 
@@ -336,7 +358,7 @@ class MeshViewerCanvas(BasicMeshCanvas):
         elif self.GUIState == STATE_CHOOSECOLORVERTICES:
             if state.ShiftDown():
                 self.GUISubstate = COLORPICK_PICKVERTEX
-            else:
+            elif state.ControlDown():
                 self.GUISubstate = COLORPICK_PICKCOLOR
         x, y = evt.GetPosition()
         self.CaptureMouse()

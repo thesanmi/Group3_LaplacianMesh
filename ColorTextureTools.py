@@ -12,7 +12,7 @@ def getColorPickingTexture():
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-    glTexImage2D(GL_TEXTURE_2D, 0, 3, J.shape[1], J.shape[0], 0, GL_RGBA, GL_UNSIGNED_BYTE, J)
+    glTexImage2D(GL_TEXTURE_2D, 0, 3, J.shape[0], J.shape[1], 0, GL_RGB, GL_UNSIGNED_BYTE, J)
     return texId
 
 def drawColorPicker(width, height, texID):
