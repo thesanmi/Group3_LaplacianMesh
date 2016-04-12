@@ -30,6 +30,8 @@ from ColorTextureTools import *
 SPECTRUM_K = 20
 LOWPASS_K = 20
 HEAT_K = 200
+HKS_K = 200
+HKS_T = 20
 
 #GUI States
 (STATE_NORMAL, STATE_CHOOSELAPLACEVERTICES, STATE_CHOOSECOLORVERTICES, STATE_ANIMATEHEAT) = (0, 1, 2, 3)
@@ -112,6 +114,16 @@ class MeshViewerCanvas(BasicMeshCanvas):
             i += 1
         return (anchors, anchorsIdx)
     
+    def getSelectedColors(self):
+        colors = np.zeros((len(self.colorChoices), 3))
+        colorsIdx = []
+        i = 0
+        for idx in self.colorChoices:
+            colorsIdx.append(idx)
+            colors[i, :] = self.colorChoices[idx]
+            i += 1
+        return (colors, colorsIdx)
+    
     def doLaplacianSolveWithConstraints(self, evt):
         (anchors, anchorsIdx) = self.getAnchors()        
         solveLaplacianMesh(self.mesh, anchors, anchorsIdx)
@@ -181,6 +193,17 @@ class MeshViewerCanvas(BasicMeshCanvas):
         self.heat_ts = np.linspace(0, 1.0/self.eigvalues[1], 100)
         self.Refresh()
 
+    def doHKS(self, evt):
+        K = HKS_K
+        if (K >= self.mesh.VPos.shape[0]):
+            K = self.mesh.VPos.shape[0]-1
+        heat = getHKS(self.mesh, K, HKS_T)
+        heat = heat/np.max(heat)
+        cmap = plt.get_cmap('jet')
+        self.mesh.VColors = cmap(heat)[:, 0:3]
+        self.mesh.needsDisplayUpdate = True
+        self.Refresh()
+
     ##Color callbacks
     def doSelectColorVertices(self, evt):
         if self.mesh:
@@ -194,7 +217,18 @@ class MeshViewerCanvas(BasicMeshCanvas):
         self.colorChoices.clear()
     
     def doInterpolateColors(self, evt):
-        print "TODO"
+        if not self.mesh:
+            return
+        (colors, colorsIdx) = self.getSelectedColors()
+        if len(colorsIdx) == 0:
+            return
+        self.mesh.VColors = smoothColors(self.mesh, colors/255.0, colorsIdx)
+        for k in range(3):
+            self.mesh.VColors[self.mesh.VColors[:, k] < 0.0, k] = 0
+            self.mesh.VColors[self.mesh.VColors[:, k] > 1.0 , k] = 1.0
+        print self.mesh.VColors
+        self.mesh.needsDisplayUpdate = True
+        self.Refresh()
     
     def updateColorChoiceBuffers(self):
         #Remake color and vertex buffers
@@ -402,7 +436,7 @@ class MeshViewerCanvas(BasicMeshCanvas):
         self.Refresh()
 
 class MeshViewerFrame(wx.Frame):
-    (ID_LOADDATASET, ID_SAVEDATASET, ID_SAVEDATASETMETERS, ID_SAVESCREENSHOT, ID_CONNECTEDCOMPONENTS, ID_SPLITFACES, ID_TRUNCATE, ID_FILLHOLES, ID_GEODESICDISTANCES, ID_PRST, ID_INTERPOLATECOLORS, ID_SAVEROTATINGSCREENSOTS, ID_SAVELIGHTINGSCREENSHOTS, ID_SELECTLAPLACEVERTICES, ID_CLEARLAPLACEVERTICES, ID_SOLVEWITHCONSTRAINTS, ID_MEMBRANEWITHCONSTRAINTS, ID_GETHKS, ID_GETHEATFLOW, ID_LAPLACIANSMOOTH, ID_LAPLACIANSHARPEN, ID_MINIMALSURFACE, ID_ESTIMATECURVATURE, ID_GETSPECTRUM, ID_DOLOWPASS, ID_DOHEAT, ID_SELECTCOLORVERTICES, ID_CLEARCOLORVERTICES, ID_INTERPOLATECOLORS) = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29)
+    (ID_LOADDATASET, ID_SAVEDATASET, ID_SAVEDATASETMETERS, ID_SAVESCREENSHOT, ID_CONNECTEDCOMPONENTS, ID_SPLITFACES, ID_TRUNCATE, ID_FILLHOLES, ID_GEODESICDISTANCES, ID_PRST, ID_INTERPOLATECOLORS, ID_SAVEROTATINGSCREENSOTS, ID_SAVELIGHTINGSCREENSHOTS, ID_SELECTLAPLACEVERTICES, ID_CLEARLAPLACEVERTICES, ID_SOLVEWITHCONSTRAINTS, ID_MEMBRANEWITHCONSTRAINTS, ID_GETHKS, ID_GETHEATFLOW, ID_LAPLACIANSMOOTH, ID_LAPLACIANSHARPEN, ID_MINIMALSURFACE, ID_ESTIMATECURVATURE, ID_GETSPECTRUM, ID_DOLOWPASS, ID_DOHEAT, ID_DOHKS, ID_SELECTCOLORVERTICES, ID_CLEARCOLORVERTICES, ID_INTERPOLATECOLORS) = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30)
     
     def __init__(self, parent, id, title, pos=DEFAULT_POS, size=DEFAULT_SIZE, style=wx.DEFAULT_FRAME_STYLE, name = 'GLWindow'):
         style = style | wx.NO_FULL_REPAINT_ON_RESIZE
@@ -456,8 +490,11 @@ class MeshViewerFrame(wx.Frame):
         menuDoLowpass = laplacianMenu.Append(MeshViewerFrame.ID_DOLOWPASS, "&Do Lowpass", "Do Lowpass")
         self.Bind(wx.EVT_MENU, self.glcanvas.doLowpass, menuDoLowpass)
         
-        menuDoHeat = laplacianMenu.Append(MeshViewerFrame.ID_DOHEAT, "&Do Heat", "Do Heat Flow Simulation")
+        menuDoHeat = laplacianMenu.Append(MeshViewerFrame.ID_DOHEAT, "&Do Heat Flow Simulation", "Do Heat Flow Simulation")
         self.Bind(wx.EVT_MENU, self.glcanvas.doHeat, menuDoHeat)
+
+        menuDoHKS = laplacianMenu.Append(MeshViewerFrame.ID_DOHKS, "&Compute Heat Kernel Signature", "Do Heat Heat Kernel Signature")
+        self.Bind(wx.EVT_MENU, self.glcanvas.doHKS, menuDoHKS)
  
         
         #####Color Selection Menu
