@@ -112,6 +112,7 @@ class MeshViewerCanvas(BasicMeshCanvas):
             anchorsIdx.append(anchor)
             anchors[i, :] = self.laplacianConstraints[anchor]
             i += 1
+        anchorsIdx = np.array(anchorsIdx)
         return (anchors, anchorsIdx)
     
     def getSelectedColors(self):
@@ -203,7 +204,26 @@ class MeshViewerCanvas(BasicMeshCanvas):
         self.mesh.VColors = cmap(heat)[:, 0:3]
         self.mesh.needsDisplayUpdate = True
         self.Refresh()
-
+    
+    def doFlattening(self, evt):
+        (anchors, quadIdxs) = self.getAnchors()
+        doFlattening(self.mesh, quadIdxs)
+        self.mesh.needsDisplayUpdate = True
+        self.mesh.updateIndexDisplayList()
+        self.Refresh()
+    
+    def doUVCoords(self, evt):
+        (anchors, quadIdxs) = self.getAnchors()
+        U = getTexCoords(self.mesh, quadIdxs)
+        self.mesh.VTexCoords = U
+        if self.mesh.texID == -1:
+            self.mesh.texID = loadTexture("texture.png")
+            print "Loaded texture: ", self.mesh.texID
+        self.useTexture = True
+        self.parent.useTextureCheckbox.SetValue(True)
+        self.mesh.needsDisplayUpdate = True
+        self.Refresh()
+    
     ##Color callbacks
     def doSelectColorVertices(self, evt):
         if self.mesh:
@@ -436,7 +456,7 @@ class MeshViewerCanvas(BasicMeshCanvas):
         self.Refresh()
 
 class MeshViewerFrame(wx.Frame):
-    (ID_LOADDATASET, ID_SAVEDATASET, ID_SAVEDATASETMETERS, ID_SAVESCREENSHOT, ID_CONNECTEDCOMPONENTS, ID_SPLITFACES, ID_TRUNCATE, ID_FILLHOLES, ID_GEODESICDISTANCES, ID_PRST, ID_INTERPOLATECOLORS, ID_SAVEROTATINGSCREENSOTS, ID_SAVELIGHTINGSCREENSHOTS, ID_SELECTLAPLACEVERTICES, ID_CLEARLAPLACEVERTICES, ID_SOLVEWITHCONSTRAINTS, ID_MEMBRANEWITHCONSTRAINTS, ID_GETHKS, ID_GETHEATFLOW, ID_LAPLACIANSMOOTH, ID_LAPLACIANSHARPEN, ID_MINIMALSURFACE, ID_ESTIMATECURVATURE, ID_GETSPECTRUM, ID_DOLOWPASS, ID_DOHEAT, ID_DOHKS, ID_SELECTCOLORVERTICES, ID_CLEARCOLORVERTICES, ID_INTERPOLATECOLORS) = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30)
+    (ID_LOADDATASET, ID_SAVEDATASET, ID_SAVEDATASETMETERS, ID_SAVESCREENSHOT, ID_CONNECTEDCOMPONENTS, ID_SPLITFACES, ID_TRUNCATE, ID_FILLHOLES, ID_GEODESICDISTANCES, ID_PRST, ID_INTERPOLATECOLORS, ID_SAVEROTATINGSCREENSOTS, ID_SAVELIGHTINGSCREENSHOTS, ID_SELECTLAPLACEVERTICES, ID_CLEARLAPLACEVERTICES, ID_SOLVEWITHCONSTRAINTS, ID_MEMBRANEWITHCONSTRAINTS, ID_GETHKS, ID_GETHEATFLOW, ID_LAPLACIANSMOOTH, ID_LAPLACIANSHARPEN, ID_MINIMALSURFACE, ID_ESTIMATECURVATURE, ID_GETSPECTRUM, ID_DOLOWPASS, ID_DOHEAT, ID_DOHKS, ID_SELECTCOLORVERTICES, ID_CLEARCOLORVERTICES, ID_INTERPOLATECOLORS, ID_DOFLATTENING, ID_DOUVCOORDS) = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32)
     
     def __init__(self, parent, id, title, pos=DEFAULT_POS, size=DEFAULT_SIZE, style=wx.DEFAULT_FRAME_STYLE, name = 'GLWindow'):
         style = style | wx.NO_FULL_REPAINT_ON_RESIZE
@@ -495,7 +515,12 @@ class MeshViewerFrame(wx.Frame):
 
         menuDoHKS = laplacianMenu.Append(MeshViewerFrame.ID_DOHKS, "&Compute Heat Kernel Signature", "Do Heat Heat Kernel Signature")
         self.Bind(wx.EVT_MENU, self.glcanvas.doHKS, menuDoHKS)
- 
+        
+        menuDoFlattening = laplacianMenu.Append(MeshViewerFrame.ID_DOFLATTENING, "&Do Flattening", "Do Flattening")
+        self.Bind(wx.EVT_MENU, self.glcanvas.doFlattening, menuDoFlattening)
+        
+        menuDoUVCoords = laplacianMenu.Append(MeshViewerFrame.ID_DOUVCOORDS, "&Compute UV Coordinates", "Compute UV Coordinates")
+        self.Bind(wx.EVT_MENU, self.glcanvas.doUVCoords, menuDoUVCoords) 
         
         #####Color Selection Menu
         colorMenu = wx.Menu()
