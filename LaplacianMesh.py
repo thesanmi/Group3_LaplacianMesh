@@ -24,6 +24,20 @@ def getLaplacianMatrixUmbrella(mesh, anchorsIdx):
     I = [0]
     J = [0]
     V = [0]
+
+    # N = len(mesh.vertices)
+    # K = len(anchorsIdx)
+    # A = np.zeros((N + K,N))
+    # D = np.zeros((N + K,N))
+    # L = np.zeros((N + K,N))
+    # for i in range(0, N):
+    #     for j in range (0,N):
+    #         if (i==j): D[i][j] = 1
+    #         v1 = mesh.vertices[i]
+    #         v2 = mesh.vertices[j]
+    #         if (getEdgeInCommon(v1, v2) == None ): A[i][j] = 1
+    # L = D-A
+
     L = sparse.coo_matrix((V, (I, J)), shape=(N+K, N)).tocsr()
     return L
 
@@ -50,7 +64,7 @@ def solveLaplacianMesh(mesh, anchors, anchorsIdx):
     #TODO: Finish this
 
 #Purpose: Given a few RGB colors on a mesh, smoothly interpolate those colors
-#by using their values as anchors and 
+#by using their values as anchors and
 #Inputs: mesh (polygon mesh object), anchors (a K x 3 numpy array of anchor
 #coordinates), anchorsIdx (a parallel array of the indices of the anchors)
 #Returns: Nothing (should update mesh.VPos)
@@ -106,11 +120,11 @@ def getLaplacianSpectrum(mesh, K):
 def doLowpassFiltering(mesh, K):
     print "TODO"
     #TODO: Finish this
-    
+
 #Purpose: Given a mesh, to simulate heat flow by projecting initial conditions
 #onto the eigenvectors of the Laplacian matrix, and then to sum up the heat
 #flow of each eigenvector after it's decayed after an amount of time t
-#Inputs: mesh (polygon mesh object), eigvalues (K eigenvalues), 
+#Inputs: mesh (polygon mesh object), eigvalues (K eigenvalues),
 #eigvectors (an NxK matrix of eigenvectors computed by your laplacian spectrum
 #code), t (the time to simulate), initialVertices (indices of the verticies
 #that have an initial amount of heat), heatValue (the value to put at each of
@@ -136,7 +150,7 @@ def getHKS(mesh, K, t):
 ##                Parameterization/Texturing               ##
 ##############################################################
 
-#Purpose: Given 4 vertex indices on a quadrilateral, to anchor them to the 
+#Purpose: Given 4 vertex indices on a quadrilateral, to anchor them to the
 #square and flatten the rest of the mesh inside of that square
 #Inputs: mesh (polygon mesh object), quadIdxs (a length 4 array of indices
 #into the mesh of the four points that are to be anchored, in CCW order)
@@ -145,8 +159,8 @@ def doFlattening(mesh, quadIdxs):
     print "TODO"
     #TODO: Finish this
 
-#Purpose: Given 4 vertex indices on a quadrilateral, to anchor them to the 
-#square and flatten the rest of the mesh inside of that square.  Then, to 
+#Purpose: Given 4 vertex indices on a quadrilateral, to anchor them to the
+#square and flatten the rest of the mesh inside of that square.  Then, to
 #return these to be used as texture coordinates
 #Inputs: mesh (polygon mesh object), quadIdxs (a length 4 array of indices
 #into the mesh of the four points that are to be anchored, in CCW order)
