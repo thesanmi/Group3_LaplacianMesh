@@ -59,6 +59,8 @@ def getLaplacianMatrixCotangent(mesh, anchorsIdx):
     I = []
     J = []
     V = []
+    N = len(mesh.vertices)
+    K = len(anchorsIdx)
     for i in range(0, N):
         for j in range (0,N):
             if (i==j):
@@ -117,8 +119,16 @@ def getLaplacianMatrixCotangent(mesh, anchorsIdx):
 #coordinates), anchorsIdx (a parallel array of the indices of the anchors)
 #Returns: Nothing (should update mesh.VPos)
 def solveLaplacianMesh(mesh, anchors, anchorsIdx):
-    print "TODO"
-    #TODO: Finish this
+    N = len(mesh.vertices)
+    K = len(anchorsIdx)
+    L = getLaplacianMatrixUmbrella(mesh, anchorsIdx)
+    #L = getLaplacianMatrixCotangent(mesh, anchorsIdx)
+    delta = np.array(L.dot(mesh.VPos))
+    for i in range(0, k):
+        delta[i+N, :] = anchors[i]
+
+    mesh.VPos = linalg.lsqr(L, delta)[0]
+
 
 #Purpose: Given a few RGB colors on a mesh, smoothly interpolate those colors
 #by using their values as anchors and
