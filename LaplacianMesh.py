@@ -125,8 +125,8 @@ def solveLaplacianMesh(mesh, anchors, anchorsIdx):
     delta = np.array(L.dot(mesh.VPos))
     for i in range(0, K):
         delta[i+N, :] = anchors[i]
-    mesh.VPos = lsqr(L, delta)[0]
-
+    for j in range(3):
+        mesh.VPos[:, j] = lsqr(L, delta[:, j])[0]
 
 #Purpose: Given a few RGB colors on a mesh, smoothly interpolate those colors
 #by using their values as anchors and
