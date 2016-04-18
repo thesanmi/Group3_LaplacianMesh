@@ -22,26 +22,31 @@ import scipy.io as sio
 def getLaplacianMatrixUmbrella(mesh, anchorsIdx):
     #TODO: These are dummy values
     #Starter Code from Chris
-    # I = [0]
-    # J = [0]
-    # V = [0]
-    #L = sparse.coo_matrix((V, (I, J)), shape=(N+K, N)).tocsr()
-
+     I = []
+     J = []
+     V = []
     N = len(mesh.vertices)
     K = len(anchorsIdx)
-    A = np.zeros((N + K,N))
-    D = np.zeros((N + K,N))
-    L = np.zeros((N + K,N))
     for i in range(0, N):
         for j in range (0,N):
-            if (i==j): D[i][j] = 1
+            if (i==j):
+                numN = len( mesh.vertices[i].getVertexNeighbors() )
+                I.append(i)
+                J.append(j)
+                V.append(numN)
+                continue
             v1 = mesh.vertices[i]
             v2 = mesh.vertices[j]
-            if (getEdgeInCommon(v1, v2) == None ): A[i][j] = 1
-    L = D-A
+            edgeCommon = getEdgeInCommon(v1, v2)
+            if (edgeCommon != None ): #neighbors
+                I.append(i)
+                J.append(j)
+                V.append(-1)
     for x in range(0,K):
-        L[N+x][anchorsIdx[x]] = 1
-        
+        I.append(N+x)
+        J.append(anchorsIdx[x])
+        V.append(1)
+    L = sparse.coo_matrix((V, (I, J)), shape=(N+K, N)).tocsr()
     return L
 
 #Purpose: To return a sparse matrix representing a laplacian matrix with
@@ -51,9 +56,58 @@ def getLaplacianMatrixUmbrella(mesh, anchorsIdx):
 #and K is the number of anchors)
 def getLaplacianMatrixCotangent(mesh, anchorsIdx):
     #TODO: These are dummy values
-    I = [0]
-    J = [0]
-    V = [0]
+    I = []
+    J = []
+    V = []
+    for i in range(0, N):
+        for j in range (0,N):
+            if (i==j):
+                numN = len( mesh.vertices[i].getVertexNeighbors() )
+                I.append(i)
+                J.append(j)
+                V.append(numN)
+                continue
+            v1 = mesh.vertices[i]
+            v2 = mesh.vertices[j]
+            edgeCommon = getEdgeInCommon(v1, v2)
+            if (edgeCommon != None ): #neighbors
+                if edgeCommon.f1:
+                    vertArray = edgeCommon.f1.getVertices()
+                    for vTemp in vertArray:
+                        if vTemp != v1 and vTemp != v2:
+                            vAlpha = vTemp
+                            continue
+                    U = np.subtract(v1, vAlpa)
+                    V = np.subtract(v2, vAlpa)
+                    cotAlpha = np.dot(U, V)/np.linalg.norm(np.cross(U, V))
+                else:
+                    cotAlpha = 0
+
+                if edgeCommon.f2:
+                    vertArray = edgeCommon.f2.getVertices()
+                    for vTemp in vertArray:
+                        if vTemp != v1 and vTemp != v2:
+                            vBeta = vTemp
+                            continue
+                    U = np.subtract(v1, vBeta)
+                    V = np.subtract(v2, vBeta)
+                    cotBeta = np.dot(U, V)/np.linalg.norm(np.cross(U, V))
+                else:
+                    cotBeta = 0
+
+                val = -0.5*(cotBeta + cotAlpha)
+                I.append(i)
+                J.append(j)
+                V.append(val)
+
+
+        for x in range(0,K):
+            I.append(N+x)
+            J.append(anchorsIdx[x])
+            V.append(1)
+        L = sparse.coo_matrix((V, (I, J)), shape=(N+K, N)).tocsr()
+        return L
+
     L = sparse.coo_matrix((V, (I, J)), shape=(N+K, N)).tocsr()
     return L
 
