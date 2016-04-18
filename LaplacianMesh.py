@@ -123,10 +123,9 @@ def solveLaplacianMesh(mesh, anchors, anchorsIdx):
     L = getLaplacianMatrixUmbrella(mesh, anchorsIdx)
     #L = getLaplacianMatrixCotangent(mesh, anchorsIdx)
     delta = np.array(L.dot(mesh.VPos))
-    for i in range(0, k):
+    for i in range(0, K):
         delta[i+N, :] = anchors[i]
-
-    mesh.VPos = linalg.lsqr(L, delta)[0]
+    mesh.VPos = lsqr(L, delta)[0]
 
 
 #Purpose: Given a few RGB colors on a mesh, smoothly interpolate those colors
