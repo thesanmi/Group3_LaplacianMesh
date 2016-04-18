@@ -21,7 +21,6 @@ import scipy.io as sio
 #and K is the number of anchors)
 def getLaplacianMatrixUmbrella(mesh, anchorsIdx):
     #TODO: These are dummy values
-    #Starter Code from Chris
     I = []
     J = []
     V = []
