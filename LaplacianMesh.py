@@ -22,9 +22,9 @@ import scipy.io as sio
 def getLaplacianMatrixUmbrella(mesh, anchorsIdx):
     #TODO: These are dummy values
     #Starter Code from Chris
-     I = []
-     J = []
-     V = []
+    I = []
+    J = []
+    V = []
     N = len(mesh.vertices)
     K = len(anchorsIdx)
     for i in range(0, N):
