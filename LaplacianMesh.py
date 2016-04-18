@@ -21,24 +21,27 @@ import scipy.io as sio
 #and K is the number of anchors)
 def getLaplacianMatrixUmbrella(mesh, anchorsIdx):
     #TODO: These are dummy values
-    I = [0]
-    J = [0]
-    V = [0]
+    #Starter Code from Chris
+    # I = [0]
+    # J = [0]
+    # V = [0]
+    #L = sparse.coo_matrix((V, (I, J)), shape=(N+K, N)).tocsr()
 
-    # N = len(mesh.vertices)
-    # K = len(anchorsIdx)
-    # A = np.zeros((N + K,N))
-    # D = np.zeros((N + K,N))
-    # L = np.zeros((N + K,N))
-    # for i in range(0, N):
-    #     for j in range (0,N):
-    #         if (i==j): D[i][j] = 1
-    #         v1 = mesh.vertices[i]
-    #         v2 = mesh.vertices[j]
-    #         if (getEdgeInCommon(v1, v2) == None ): A[i][j] = 1
-    # L = D-A
-
-    L = sparse.coo_matrix((V, (I, J)), shape=(N+K, N)).tocsr()
+    N = len(mesh.vertices)
+    K = len(anchorsIdx)
+    A = np.zeros((N + K,N))
+    D = np.zeros((N + K,N))
+    L = np.zeros((N + K,N))
+    for i in range(0, N):
+        for j in range (0,N):
+            if (i==j): D[i][j] = 1
+            v1 = mesh.vertices[i]
+            v2 = mesh.vertices[j]
+            if (getEdgeInCommon(v1, v2) == None ): A[i][j] = 1
+    L = D-A
+    for x in range(0,K):
+        L[N+x][anchorsIdx[x]] = 1
+        
     return L
 
 #Purpose: To return a sparse matrix representing a laplacian matrix with
