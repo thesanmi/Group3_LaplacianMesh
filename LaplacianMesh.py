@@ -57,7 +57,7 @@ def getLaplacianMatrixCotangent(mesh, anchorsIdx):
     #TODO: These are dummy values
     I = []
     J = []
-    V = []
+    Val = []
     N = len(mesh.vertices)
     K = len(anchorsIdx)
     for i in range(0, N):
@@ -66,7 +66,7 @@ def getLaplacianMatrixCotangent(mesh, anchorsIdx):
                 numN = len( mesh.vertices[i].getVertexNeighbors() )
                 I.append(i)
                 J.append(j)
-                V.append(numN)
+                Val.append(numN)
                 continue
             v1 = mesh.vertices[i]
             v2 = mesh.vertices[j]
@@ -78,8 +78,12 @@ def getLaplacianMatrixCotangent(mesh, anchorsIdx):
                         if vTemp != v1 and vTemp != v2:
                             vAlpha = vTemp
                             continue
-                    U = np.subtract(v1, vAlpa)
-                    V = np.subtract(v2, vAlpa)
+                    #mesh.VPos
+                    v1pos = mesh.VPos[v1.ID, :]
+                    v2pos = mesh.VPos[v2.ID, :]
+                    vAlphapos = mesh.VPos[vAlpha.ID, :]
+                    U = np.subtract(v1pos, vAlphapos)
+                    V = np.subtract(v2pos, vAlphapos)
                     cotAlpha = np.dot(U, V)/np.linalg.norm(np.cross(U, V))
                 else:
                     cotAlpha = 0
@@ -90,26 +94,27 @@ def getLaplacianMatrixCotangent(mesh, anchorsIdx):
                         if vTemp != v1 and vTemp != v2:
                             vBeta = vTemp
                             continue
-                    U = np.subtract(v1, vBeta)
-                    V = np.subtract(v2, vBeta)
+                    v1pos = mesh.VPos[v1.ID, :]
+                    v2pos = mesh.VPos[v2.ID, :]
+                    vBetapos = mesh.VPos[vBeta.ID, :]
+                    U = np.subtract(v1pos, vBetapos)
+                    V = np.subtract(v2pos, vBetapos)
                     cotBeta = np.dot(U, V)/np.linalg.norm(np.cross(U, V))
                 else:
                     cotBeta = 0
 
-                val = -0.5*(cotBeta + cotAlpha)
+                myval = -0.5*(cotBeta + cotAlpha)
                 I.append(i)
                 J.append(j)
-                V.append(val)
+                Val.append(myval)
 
 
-        for x in range(0,K):
-            I.append(N+x)
-            J.append(anchorsIdx[x])
-            V.append(1)
-        L = sparse.coo_matrix((V, (I, J)), shape=(N+K, N)).tocsr()
-        return L
+    for x in range(0,K):
+        I.append(N+x)
+        J.append(anchorsIdx[x])
+        Val.append(1)
 
-    L = sparse.coo_matrix((V, (I, J)), shape=(N+K, N)).tocsr()
+    L = sparse.coo_matrix((Val, (I, J)), shape=(N+K, N)).tocsr()
     return L
 
 #Purpose: Given a mesh, to perform Laplacian mesh editing by solving the system
@@ -120,8 +125,8 @@ def getLaplacianMatrixCotangent(mesh, anchorsIdx):
 def solveLaplacianMesh(mesh, anchors, anchorsIdx):
     N = len(mesh.vertices)
     K = len(anchorsIdx)
-    L = getLaplacianMatrixUmbrella(mesh, anchorsIdx)
-    #L = getLaplacianMatrixCotangent(mesh, anchorsIdx)
+    #L = getLaplacianMatrixUmbrella(mesh, anchorsIdx)
+    L = getLaplacianMatrixCotangent(mesh, anchorsIdx)
     delta = np.array(L.dot(mesh.VPos))
     for i in range(0, K):
         delta[i+N, :] = anchors[i]
