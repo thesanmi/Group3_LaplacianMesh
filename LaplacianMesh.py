@@ -140,9 +140,19 @@ def solveLaplacianMesh(mesh, anchors, anchorsIdx):
 #Returns: Nothing (should update mesh.VPos)
 def smoothColors(mesh, colors, colorsIdx):
     N = mesh.VPos.shape[0]
-    colors = np.zeros((N, 3)) #dummy values (all black)
+    colors2 = np.zeros((N, 3)) #dummy values (all black)
     #TODO: Finish this
-    return colors
+
+    K = len(colorsIdx)
+    L = getLaplacianMatrixUmbrella(mesh, colorsIdx)
+    delta = np.array(L.dot(mesh.VPos))
+    #delta = np.zeros((N+K, 3))
+    for i in range(0, K):
+        delta[i+N, :] = colors[i]
+    for j in range(3):
+        colors2[:, j] = lsqr(L, delta[:, j])[0]
+    #L = getLaplacianMatrixCotangent(mesh, anchorsIdx)
+    return colors2
 
 #Purpose: Given a mesh, to smooth it by subtracting off the delta coordinates
 #from each vertex, normalized by the degree of that vertex
