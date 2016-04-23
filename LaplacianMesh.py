@@ -159,16 +159,29 @@ def smoothColors(mesh, colors, colorsIdx):
 #Inputs: mesh (polygon mesh object)
 #Returns: Nothing (should update mesh.VPos)
 def doLaplacianSmooth(mesh):
-    print "TODO"
-    #TODO: Finish this
+    L = getLaplacianMatrixUmbrella(mesh, [])
+    #L = getLaplacianMatrixCotangent(mesh, [])
+    Ln = np.copy(L)
+    i = 0
+    for row in L:
+        Ln[i, :] = L[i, :]/np.sum(row)
+        i = i + 1
+    mesh.VPos = mesh.VPos - np.array(Ln.dot(mesh.VPos))
+
 
 #Purpose: Given a mesh, to sharpen it by adding back the delta coordinates
 #from each vertex, normalized by the degree of that vertex
 #Inputs: mesh (polygon mesh object)
 #Returns: Nothing (should update mesh.VPos)
 def doLaplacianSharpen(mesh):
-    print "TODO"
-    #TODO: Finish this
+    L = getLaplacianMatrixUmbrella(mesh, [])
+    #L = getLaplacianMatrixCotangent(mesh, [])
+    Ln = np.copy(L)
+    i = 0
+    for row in L:
+        Ln[i, :] = L[i, :]/np.sum(row)
+        i = i + 1
+    mesh.VPos = mesh.VPos + np.array(Ln.dot(mesh.VPos))
 
 #Purpose: Given a mesh and a set of anchors, to simulate a minimal surface
 #by replacing the rows of the laplacian matrix with the anchors, setting
@@ -191,6 +204,7 @@ def makeMinimalSurface(mesh, anchors, anchorsIdx):
 #Returns: (eigvalues, eigvectors): a tuple of the eigenvalues and eigenvectors
 def getLaplacianSpectrum(mesh, K):
     #TODO: Finish this
+    #(eigvalues, eigvectors) = scipy.sparse.linalg.eigsh(A, K, which='LM', sigma = 0) 
     return (None, None)
 
 #Purpose: Given a mesh, to use the first K eigenvectors of its Laplacian
