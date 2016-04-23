@@ -54,20 +54,16 @@ def getLaplacianMatrixUmbrella(mesh, anchorsIdx):
 #Returns: L (An (N+K) x N sparse matrix, where N is the number of vertices
 #and K is the number of anchors)
 def getLaplacianMatrixCotangent(mesh, anchorsIdx):
-    #TODO: These are dummy values
     I = []
     J = []
     Val = []
     N = len(mesh.vertices)
     K = len(anchorsIdx)
     for i in range(0, N):
+        myDiag = 0
         for j in range (0,N):
-            if (i==j):
-                numN = len( mesh.vertices[i].getVertexNeighbors() )
-                I.append(i)
-                J.append(j)
-                Val.append(numN)
-                continue
+            if (i==j): continue
+
             v1 = mesh.vertices[i]
             v2 = mesh.vertices[j]
             edgeCommon = getEdgeInCommon(v1, v2)
@@ -107,7 +103,11 @@ def getLaplacianMatrixCotangent(mesh, anchorsIdx):
                 I.append(i)
                 J.append(j)
                 Val.append(myval)
+                myDiag = myDiag + myval
 
+        I.append(i)
+        J.append(i)
+        Val.append(-myDiag)
 
     for x in range(0,K):
         I.append(N+x)
@@ -125,8 +125,8 @@ def getLaplacianMatrixCotangent(mesh, anchorsIdx):
 def solveLaplacianMesh(mesh, anchors, anchorsIdx):
     N = len(mesh.vertices)
     K = len(anchorsIdx)
-    #L = getLaplacianMatrixUmbrella(mesh, anchorsIdx)
-    L = getLaplacianMatrixCotangent(mesh, anchorsIdx)
+    L = getLaplacianMatrixUmbrella(mesh, anchorsIdx)
+    #L = getLaplacianMatrixCotangent(mesh, anchorsIdx)
     delta = np.array(L.dot(mesh.VPos))
     for i in range(0, K):
         delta[i+N, :] = anchors[i]
