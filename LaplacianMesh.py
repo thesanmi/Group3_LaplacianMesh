@@ -145,6 +145,7 @@ def smoothColors(mesh, colors, colorsIdx):
 
     K = len(colorsIdx)
     L = getLaplacianMatrixUmbrella(mesh, colorsIdx)
+    #L = getLaplacianMatrixCotangent(mesh, colorsIdx)
     delta = np.array(L.dot(mesh.VPos))
     #delta = np.zeros((N+K, 3))
     for i in range(0, K):
@@ -193,8 +194,21 @@ def doLaplacianSharpen(mesh):
 #coordinates), anchorsIdx (a parallel array of the indices of the anchors)
 #Returns: Nothing (should update mesh.VPos)
 def makeMinimalSurface(mesh, anchors, anchorsIdx):
-    print "TODO"
-    #TODO: Finish this
+
+    N = len(mesh.vertices)
+    K = len(anchorsIdx)
+    L = getLaplacianMatrixUmbrella(mesh, anchorsIdx)
+    #L = getLaplacianMatrixCotangent(mesh, anchorsIdx)
+    delta = np.array(L.dot(mesh.VPos))
+
+    for i in range(0, K):
+        index = anchorsIdx[i]
+        L[index, :] = 0
+        L[index, index] = 1
+        delta[index, :] = anchors[i]
+
+    for j in range(3):
+        mesh.VPos[:, j] = lsqr(L, delta[:, j])[0]
 
 ##############################################################
 ##        Spectral Representations / Heat Flow              ##
