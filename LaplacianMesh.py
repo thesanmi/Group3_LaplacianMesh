@@ -164,7 +164,8 @@ def doLaplacianSmooth(mesh):
     Ln = np.copy(L)
     i = 0
     for row in L:
-        Ln[i, :] = L[i, :]/np.sum(row)
+        tempSum = np.sum(row) - row[i]
+        Ln[i, :] = L[i, :]/tempSum
         i = i + 1
     mesh.VPos = mesh.VPos - np.array(Ln.dot(mesh.VPos))
 
@@ -179,7 +180,8 @@ def doLaplacianSharpen(mesh):
     Ln = np.copy(L)
     i = 0
     for row in L:
-        Ln[i, :] = L[i, :]/np.sum(row)
+        tempSum = np.sum(row) - row[i]
+        Ln[i, :] = L[i, :]/tempSum
         i = i + 1
     mesh.VPos = mesh.VPos + np.array(Ln.dot(mesh.VPos))
 
@@ -204,7 +206,7 @@ def makeMinimalSurface(mesh, anchors, anchorsIdx):
 #Returns: (eigvalues, eigvectors): a tuple of the eigenvalues and eigenvectors
 def getLaplacianSpectrum(mesh, K):
     #TODO: Finish this
-    #(eigvalues, eigvectors) = scipy.sparse.linalg.eigsh(A, K, which='LM', sigma = 0) 
+    #(eigvalues, eigvectors) = scipy.sparse.linalg.eigsh(A, K, which='LM', sigma = 0)
     return (None, None)
 
 #Purpose: Given a mesh, to use the first K eigenvectors of its Laplacian
