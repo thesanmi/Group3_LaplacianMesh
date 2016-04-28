@@ -46,31 +46,31 @@ class MeshViewerCanvas(BasicMeshCanvas):
         self.laplacianConstraints = {} #Elements will be key-value pairs (idx, Point3D(new position))
         self.laplaceCurrentIdx = -1
         self.laplacianSelections = [] #Stores an ordered list of the selections (used for flattening)
-        
+
         self.colorChoices = {} #Elements will be key-value paris (idx, np.array([R, G, B]))
-        self.colorCurrentIdx = -1    
+        self.colorCurrentIdx = -1
 
     def __init__(self, parent):
         super(MeshViewerCanvas, self).__init__(parent)
         self.GUIState = STATE_NORMAL
         self.GUISubstate = SUBSTATE_NONE
-        
+
         self.clearAllSelections()
-        
+
         #State variables for heat, etc
         (self.eigvalues, self.eigvectors) = (np.array([]), np.array([]))
         self.heatIdx = 0
         self.heat_ts = np.linspace(0, 1000, 100)
-        
+
         #State variables for color picking
         self.colorPickTexID = None
         self.colorPosVBO = None
         self.colorColorVBO = None
-        
+
         self.Bind(wx.EVT_KEY_DOWN, self.onKeyPress)
         self.Bind(wx.EVT_KEY_UP, self.onKeyRelease)
         self.pressingC = False
-    
+
     def displayMeshFacesCheckbox(self, evt):
         self.displayMeshFaces = evt.Checked()
         self.Refresh()
@@ -95,20 +95,20 @@ class MeshViewerCanvas(BasicMeshCanvas):
         self.useLighting = evt.Checked()
         self.needsDisplayUpdate = True
         self.Refresh()
-    
+
     def useTextureCheckbox(self, evt):
         self.useTexture = evt.Checked()
         self.needsDisplayUpdate = True
-        self.Refresh()    
-    
+        self.Refresh()
+
     def onKeyPress(self, evt):
         if evt.GetUnicodeKey() == 67:
             self.pressingC = True
-    
+
     def onKeyRelease(self, evt):
         if evt.GetUnicodeKey() == 67:
             self.pressingC = False
-    
+
     #######Laplacian mesh menu handles
     def doLaplacianMeshSelectVertices(self, evt):
         if self.mesh:
@@ -116,11 +116,11 @@ class MeshViewerCanvas(BasicMeshCanvas):
             self.GUIState = STATE_CHOOSELAPLACEVERTICES
             self.GUISubstate = CHOOSELAPLACE_WAITING
             self.Refresh()
-    
+
     def clearLaplacianMeshSelection(self, evt):
         self.laplacianConstraints.clear()
         self.Refresh()
-    
+
     def getAnchors(self):
         anchors = np.zeros((len(self.laplacianConstraints), 3))
         i = 0
@@ -131,7 +131,7 @@ class MeshViewerCanvas(BasicMeshCanvas):
             i += 1
         anchorsIdx = np.array(anchorsIdx)
         return (anchors, anchorsIdx)
-    
+
     def getSelectedColors(self):
         colors = np.zeros((len(self.colorChoices), 3))
         colorsIdx = []
@@ -141,14 +141,14 @@ class MeshViewerCanvas(BasicMeshCanvas):
             colors[i, :] = self.colorChoices[idx]
             i += 1
         return (colors, colorsIdx)
-    
+
     def doLaplacianSolveWithConstraints(self, evt):
-        (anchors, anchorsIdx) = self.getAnchors()        
+        (anchors, anchorsIdx) = self.getAnchors()
         solveLaplacianMesh(self.mesh, anchors, anchorsIdx)
         self.mesh.needsDisplayUpdate = True
         self.mesh.updateIndexDisplayList()
         self.Refresh()
-    
+
     def estimateCurvature(self, evt):
         #Color vertices to be equal to mean curvature
         curvs = estimateMeanCurvature(self.mesh)
@@ -157,7 +157,7 @@ class MeshViewerCanvas(BasicMeshCanvas):
         cmConvert = cm.get_cmap('jet')
         self.mesh.VColors = cmConvert(curvs)[:, 0:3]
         self.mesh.needsDisplayUpdate = True
-    
+
     def doLaplacianSmooth(self, evt):
         doLaplacianSmooth(self.mesh)
         self.mesh.needsDisplayUpdate = True
@@ -167,9 +167,9 @@ class MeshViewerCanvas(BasicMeshCanvas):
         doLaplacianSharpen(self.mesh)
         self.mesh.needsDisplayUpdate = True
         self.Refresh()
-    
+
     def doMinimalSurface(self, evt):
-        (anchors, anchorsIdx) = self.getAnchors()        
+        (anchors, anchorsIdx) = self.getAnchors()
         makeMinimalSurface(self.mesh, anchors, anchorsIdx)
         #solveLaplacianMesh(self.mesh, anchors, anchorsIdx)
         self.mesh.needsDisplayUpdate = True
@@ -191,7 +191,7 @@ class MeshViewerCanvas(BasicMeshCanvas):
                 Y = Y/np.max(Y)
             VColors = np.array(np.round(255.0*cmap(Y)[:, 0:3]), dtype=np.int64)
             saveOffFileExternal("spectrum%i.off"%k, VPos, VColors, ITris)
-    
+
     def doLowpass(self, evt):
         K = LOWPASS_K
         if (K >= self.mesh.VPos.shape[0]):
@@ -200,7 +200,7 @@ class MeshViewerCanvas(BasicMeshCanvas):
         self.mesh.needsDisplayUpdate = True
         self.mesh.updateIndexDisplayList()
         self.Refresh()
-    
+
     def doHeat(self, evt):
         K = HEAT_K
         if (K >= self.mesh.VPos.shape[0]):
@@ -221,14 +221,14 @@ class MeshViewerCanvas(BasicMeshCanvas):
         self.mesh.VColors = cmap(heat)[:, 0:3]
         self.mesh.needsDisplayUpdate = True
         self.Refresh()
-    
+
     def doFlattening(self, evt):
         print self.laplacianSelections
         doFlattening(self.mesh, self.laplacianSelections)
         self.mesh.needsDisplayUpdate = True
         self.mesh.updateIndexDisplayList()
         self.Refresh()
-    
+
     def doUVCoords(self, evt):
         (anchors, quadIdxs) = self.getAnchors()
         U = getTexCoords(self.mesh, quadIdxs)
@@ -240,7 +240,7 @@ class MeshViewerCanvas(BasicMeshCanvas):
         self.parent.useTextureCheckbox.SetValue(True)
         self.mesh.needsDisplayUpdate = True
         self.Refresh()
-    
+
     ##Color callbacks
     def doSelectColorVertices(self, evt):
         if self.mesh:
@@ -249,10 +249,10 @@ class MeshViewerCanvas(BasicMeshCanvas):
             self.GUISubstate = COLORPICK_WAITING
             self.colorCurrentIdx = -1
             self.Refresh()
-    
+
     def clearColorVertexSelection(self, evt):
         self.colorChoices.clear()
-    
+
     def doInterpolateColors(self, evt):
         if not self.mesh:
             return
@@ -266,7 +266,7 @@ class MeshViewerCanvas(BasicMeshCanvas):
         print self.mesh.VColors
         self.mesh.needsDisplayUpdate = True
         self.Refresh()
-    
+
     def updateColorChoiceBuffers(self):
         #Remake color and vertex buffers
         if self.colorPosVBO:
@@ -283,7 +283,7 @@ class MeshViewerCanvas(BasicMeshCanvas):
             i += 1
         self.colorPosVBO = vbo.VBO(np.array(Pos, dtype=np.float32))
         self.colorColorVBO = vbo.VBO(np.array(Colors, dtype=np.float32))
-    
+
     def drawMeshStandard(self):
         glEnable(GL_LIGHTING)
         glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, [0.8, 0.8, 0.8, 1.0])
@@ -295,12 +295,12 @@ class MeshViewerCanvas(BasicMeshCanvas):
 
     def repaint(self):
         self.setupPerspectiveMatrix()
-        
+
         glClearColor(0.0, 0.0, 0.0, 0.0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        
+
         if self.GUIState == STATE_NORMAL and self.mesh:
-            self.drawMeshStandard()        
+            self.drawMeshStandard()
         elif self.GUIState == STATE_ANIMATEHEAT and self.eigvectors.size > 0 and self.eigvalues.size > 0:
             cmap = plt.get_cmap('jet')
             (anchors, anchorsIdx) = self.getAnchors()
@@ -344,7 +344,7 @@ class MeshViewerCanvas(BasicMeshCanvas):
                     glVertex3f(P2[0], P2[1], P2[2])
                 glEnd()
                 self.drawMeshStandard()
-                
+
             elif self.GUISubstate == CHOOSELAPLACE_PICKVERTEX:
                 glClearColor(0.0, 0.0, 0.0, 0.0)
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -366,7 +366,7 @@ class MeshViewerCanvas(BasicMeshCanvas):
                         self.laplacianSelections.append(idx)
                 self.GUISubstate = CHOOSELAPLACE_WAITING
                 self.Refresh()
-                
+
         elif self.GUIState == STATE_CHOOSECOLORVERTICES:
             if self.GUISubstate == COLORPICK_WAITING:
                 self.drawMeshStandard()
@@ -388,7 +388,7 @@ class MeshViewerCanvas(BasicMeshCanvas):
                     glDisableClientState(GL_COLOR_ARRAY)
                     glDisableClientState(GL_VERTEX_ARRAY)
                 drawColorPicker(self.size.width, self.size.height, self.colorPickTexID)
-                
+
             elif self.GUISubstate == COLORPICK_PICKVERTEX:
                 glClearColor(0.0, 0.0, 0.0, 0.0)
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -408,7 +408,7 @@ class MeshViewerCanvas(BasicMeshCanvas):
                     self.updateColorChoiceBuffers()
                 self.GUISubstate = COLORPICK_WAITING
                 self.Refresh()
-            
+
             elif self.GUISubstate == COLORPICK_PICKCOLOR:
                 self.drawMeshStandard()
                 drawColorPicker(self.size.width, self.size.height, self.colorPickTexID)
@@ -416,10 +416,10 @@ class MeshViewerCanvas(BasicMeshCanvas):
                     pixel = glReadPixels(self.MousePos[0], self.MousePos[1], 1, 1, GL_RGBA, GL_UNSIGNED_BYTE)
                     [R, G, B, A] = [int(pixel.encode("hex")[i*2:(i+1)*2], 16) for i in range(4)]
                     self.colorChoices[self.colorCurrentIdx] = np.array([R, G, B])
-                    self.updateColorChoiceBuffers()                    
+                    self.updateColorChoiceBuffers()
                 self.GUISubstate = COLORPICK_WAITING
                 self.Refresh()
-                
+
         self.SwapBuffers()
 
     def MouseDown(self, evt):
@@ -477,18 +477,18 @@ class MeshViewerCanvas(BasicMeshCanvas):
 
 class MeshViewerFrame(wx.Frame):
     (ID_LOADDATASET, ID_SAVEDATASET, ID_SAVEDATASETMETERS, ID_SAVESCREENSHOT, ID_CONNECTEDCOMPONENTS, ID_SPLITFACES, ID_TRUNCATE, ID_FILLHOLES, ID_GEODESICDISTANCES, ID_PRST, ID_INTERPOLATECOLORS, ID_SAVEROTATINGSCREENSOTS, ID_SAVELIGHTINGSCREENSHOTS, ID_SELECTLAPLACEVERTICES, ID_CLEARLAPLACEVERTICES, ID_SOLVEWITHCONSTRAINTS, ID_MEMBRANEWITHCONSTRAINTS, ID_GETHKS, ID_GETHEATFLOW, ID_LAPLACIANSMOOTH, ID_LAPLACIANSHARPEN, ID_MINIMALSURFACE, ID_ESTIMATECURVATURE, ID_GETSPECTRUM, ID_DOLOWPASS, ID_DOHEAT, ID_DOHKS, ID_SELECTCOLORVERTICES, ID_CLEARCOLORVERTICES, ID_INTERPOLATECOLORS, ID_DOFLATTENING, ID_DOUVCOORDS) = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32)
-    
+
     def __init__(self, parent, id, title, pos=DEFAULT_POS, size=DEFAULT_SIZE, style=wx.DEFAULT_FRAME_STYLE, name = 'GLWindow'):
         style = style | wx.NO_FULL_REPAINT_ON_RESIZE
         super(MeshViewerFrame, self).__init__(parent, id, title, pos, size, style, name)
         #Initialize the menu
         self.CreateStatusBar()
-        
+
         self.size = size
         self.pos = pos
         print "MeshViewerFrameSize = %s, pos = %s"%(self.size, self.pos)
         self.glcanvas = MeshViewerCanvas(self)
-        
+
         #####File menu
         filemenu = wx.Menu()
         menuOpenMesh = filemenu.Append(MeshViewerFrame.ID_LOADDATASET, "&Load Mesh","Load a polygon mesh")
@@ -497,71 +497,71 @@ class MeshViewerFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnSaveMesh, menuSaveMesh)
         menuSaveScreenshot = filemenu.Append(MeshViewerFrame.ID_SAVESCREENSHOT, "&Save Screenshot", "Save a screenshot of the GL Canvas")
         self.Bind(wx.EVT_MENU, self.OnSaveScreenshot, menuSaveScreenshot)
-        
+
         menuExit = filemenu.Append(wx.ID_EXIT,"E&xit"," Terminate the program")
         self.Bind(wx.EVT_MENU, self.OnExit, menuExit)
-        
+
         #####Laplacian Mesh Menu
         laplacianMenu = wx.Menu()
         menuSelectLaplaceVertices = laplacianMenu.Append(MeshViewerFrame.ID_SELECTLAPLACEVERTICES, "&Select Laplace Vertices", "Select Laplace Vertices")
         self.Bind(wx.EVT_MENU, self.glcanvas.doLaplacianMeshSelectVertices, menuSelectLaplaceVertices)
-        
+
         menuClearLaplaceVertices = laplacianMenu.Append(MeshViewerFrame.ID_CLEARLAPLACEVERTICES, "&Clear vertex selection", "Clear Vertex Selection")
         self.Bind(wx.EVT_MENU, self.glcanvas.clearLaplacianMeshSelection, menuClearLaplaceVertices)
-        
+
         menuSolveWithConstraints = laplacianMenu.Append(MeshViewerFrame.ID_SOLVEWITHCONSTRAINTS, "&Solve with Constraints", "Solve with Constraints")
         self.Bind(wx.EVT_MENU, self.glcanvas.doLaplacianSolveWithConstraints, menuSolveWithConstraints)
-        
+
 #        menuEstimateCurvature = laplacianMenu.Append(MeshViewerFrame.ID_ESTIMATECURVATURE, "&Estimate Mean Curvature", "Estimate Mean Curvature")
 #        self.Bind(wx.EVT_MENU, self.glcanvas.estimateCurvature, menuEstimateCurvature)
-        
+
         menuLaplacianSmooth = laplacianMenu.Append(MeshViewerFrame.ID_LAPLACIANSMOOTH, "&Laplacian Smooth", "Laplacian Smooth")
         self.Bind(wx.EVT_MENU, self.glcanvas.doLaplacianSmooth, menuLaplacianSmooth)
-        
+
         menuLaplacianSharpen = laplacianMenu.Append(MeshViewerFrame.ID_LAPLACIANSHARPEN, "&Laplacian Sharpen", "Laplacian Sharpen")
         self.Bind(wx.EVT_MENU, self.glcanvas.doLaplacianSharpen, menuLaplacianSharpen)
-        
+
         menuMinimalSurface = laplacianMenu.Append(MeshViewerFrame.ID_MINIMALSURFACE, "&Minimal Surface", "Minimal Surface")
         self.Bind(wx.EVT_MENU, self.glcanvas.doMinimalSurface, menuMinimalSurface)
-        
+
         menuGetSpectrum = laplacianMenu.Append(MeshViewerFrame.ID_GETSPECTRUM, "&Get Spectrum", "Get Spectrum")
         self.Bind(wx.EVT_MENU, self.glcanvas.getSpectrum, menuGetSpectrum)
 
         menuDoLowpass = laplacianMenu.Append(MeshViewerFrame.ID_DOLOWPASS, "&Do Lowpass", "Do Lowpass")
         self.Bind(wx.EVT_MENU, self.glcanvas.doLowpass, menuDoLowpass)
-        
+
         menuDoHeat = laplacianMenu.Append(MeshViewerFrame.ID_DOHEAT, "&Do Heat Flow Simulation", "Do Heat Flow Simulation")
         self.Bind(wx.EVT_MENU, self.glcanvas.doHeat, menuDoHeat)
 
         menuDoHKS = laplacianMenu.Append(MeshViewerFrame.ID_DOHKS, "&Compute Heat Kernel Signature", "Do Heat Heat Kernel Signature")
         self.Bind(wx.EVT_MENU, self.glcanvas.doHKS, menuDoHKS)
-        
+
         menuDoFlattening = laplacianMenu.Append(MeshViewerFrame.ID_DOFLATTENING, "&Do Flattening", "Do Flattening")
         self.Bind(wx.EVT_MENU, self.glcanvas.doFlattening, menuDoFlattening)
-        
+
         menuDoUVCoords = laplacianMenu.Append(MeshViewerFrame.ID_DOUVCOORDS, "&Compute UV Coordinates", "Compute UV Coordinates")
-        self.Bind(wx.EVT_MENU, self.glcanvas.doUVCoords, menuDoUVCoords) 
-        
+        self.Bind(wx.EVT_MENU, self.glcanvas.doUVCoords, menuDoUVCoords)
+
         #####Color Selection Menu
         colorMenu = wx.Menu()
         menuSelectColorVertices = colorMenu.Append(MeshViewerFrame.ID_SELECTCOLORVERTICES, "&Select Color Vertices", "Select Color Vertices")
         self.Bind(wx.EVT_MENU, self.glcanvas.doSelectColorVertices, menuSelectColorVertices)
-        
+
         menuClearColorVertices = colorMenu.Append(MeshViewerFrame.ID_CLEARCOLORVERTICES, "&Clear color vertex selection", "Clear Color Vertex Selection")
         self.Bind(wx.EVT_MENU, self.glcanvas.clearColorVertexSelection, menuClearColorVertices)
-        
+
         menuInterpolateColors = colorMenu.Append(MeshViewerFrame.ID_INTERPOLATECOLORS, "&Interpolate Colors", "Interpolate Colors")
         self.Bind(wx.EVT_MENU, self.glcanvas.doInterpolateColors, menuInterpolateColors)
-        
+
         # Creating the menubar.
         menuBar = wx.MenuBar()
         menuBar.Append(filemenu,"&File") # Adding the "filemenu" to the MenuBar
         menuBar.Append(laplacianMenu,"&MeshLaplacian") # Adding the "filemenu" to the MenuBar
         menuBar.Append(colorMenu,"&MeshColoring") #Adding the coloring menu
         self.SetMenuBar(menuBar)  # Adding the MenuBar to the Frame content.
-        
+
         self.rightPanel = wx.BoxSizer(wx.VERTICAL)
-        
+
         #Buttons to go to a default view
         viewPanel = wx.BoxSizer(wx.HORIZONTAL)
         topViewButton = wx.Button(self, -1, "Top")
@@ -575,7 +575,7 @@ class MeshViewerFrame(wx.Frame):
         viewPanel.Add(frontViewButton, 0, wx.EXPAND)
         self.rightPanel.Add(wx.StaticText(self, label="Views"), 0, wx.EXPAND)
         self.rightPanel.Add(viewPanel, 0, wx.EXPAND)
-        
+
         #Checkboxes for displaying data
         self.displayMeshFacesCheckbox = wx.CheckBox(self, label = "Display Mesh Faces")
         self.displayMeshFacesCheckbox.SetValue(True)
@@ -606,17 +606,17 @@ class MeshViewerFrame(wx.Frame):
         self.Bind(wx.EVT_CHECKBOX, self.glcanvas.useTextureCheckbox, self.useTextureCheckbox)
         self.rightPanel.Add(self.useTextureCheckbox, 0, wx.EXPAND)
 
-        #Finally add the two main panels to the sizer        
+        #Finally add the two main panels to the sizer
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
         #cubecanvas = CubeCanvas(self)
         #self.sizer.Add(cubecanvas, 2, wx.EXPAND)
         self.sizer.Add(self.glcanvas, 2, wx.EXPAND)
         self.sizer.Add(self.rightPanel, 0, wx.EXPAND)
-        
+
         self.SetSizer(self.sizer)
         self.Layout()
         self.glcanvas.Show()
-    
+
     def OnLoadMesh(self, evt):
         dlg = wx.FileDialog(self, "Choose a file", ".", "", "OFF files (*.off)|*.off|TOFF files (*.toff)|*.toff|OBJ files (*.obj)|*.obj", wx.FD_OPEN)
         if dlg.ShowModal() == wx.ID_OK:
@@ -646,8 +646,8 @@ class MeshViewerFrame(wx.Frame):
             self.glcanvas.mesh.saveFile(filepath, True)
             self.glcanvas.Refresh()
         dlg.Destroy()
-        return     
-        
+        return
+
     def OnSaveScreenshot(self, evt):
         dlg = wx.FileDialog(self, "Choose a file", ".", "", "*", wx.FD_SAVE)
         if dlg.ShowModal() == wx.ID_OK:
