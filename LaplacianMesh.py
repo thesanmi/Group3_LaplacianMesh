@@ -219,17 +219,18 @@ def makeMinimalSurface(mesh, anchors, anchorsIdx):
 #Inputs: mesh (polygon mesh object), K (number of eigenvalues/eigenvectors)
 #Returns: (eigvalues, eigvectors): a tuple of the eigenvalues and eigenvectors
 def getLaplacianSpectrum(mesh, K):
-    #TODO: Finish this
-    #(eigvalues, eigvectors) = scipy.sparse.linalg.eigsh(A, K, which='LM', sigma = 0)
-    return (None, None)
+    A = getLaplacianMatrixUmbrella(mesh, [])
+    (eigvalues, eigvectors) = eigsh(A.asfptype(), K, which='LM', sigma = 0)
+    return (eigvalues, eigvectors)
 
 #Purpose: Given a mesh, to use the first K eigenvectors of its Laplacian
 #to perform a lowpass filtering
 #Inputs: mesh (polygon mesh object), K (number of eigenvalues/eigenvectors)
 #Returns: Nothing (should update mesh.VPos)
 def doLowpassFiltering(mesh, K):
-    print "TODO"
-    #TODO: Finish this
+    (eigvalues, eigvectors) = getLaplacianSpectrum(mesh, K)
+    U_K = eigvectors
+    mesh.VPos = np.dot(np.dot(U_K, U_K.T), mesh.VPos)
 
 #Purpose: Given a mesh, to simulate heat flow by projecting initial conditions
 #onto the eigenvectors of the Laplacian matrix, and then to sum up the heat
@@ -242,8 +243,15 @@ def doLowpassFiltering(mesh, K):
 #Returns: heat (a length N array of heat values on the mesh)
 def getHeat(mesh, eigvalues, eigvectors, t, initialVertices, heatValue = 100.0):
     N = mesh.VPos.shape[0]
-    heat = np.zeros(N) #Dummy value
-    return heat #TODO: Finish this
+    K = eigvectors.shape[1]
+    f0 = np.zeros(N)
+    heat = np.zeros(N)
+    for i in initialVertices:
+        f0[i] = heatValue
+    for i in range(0, K):
+        fi = float(np.exp(-1*eigvalues[i]*t)) * np.dot(np.dot(f0.T, eigvectors[:, i]), eigvectors[:, i])
+        heat += fi
+    return heat
 
 #Purpose: Given a mesh, to approximate its curvature at some measurement scale
 #by recording the amount of heat that stays at each vertex after a unit impulse
@@ -253,8 +261,15 @@ def getHeat(mesh, eigvalues, eigvectors, t, initialVertices, heatValue = 100.0):
 #Returns: hks (a length N array of the HKS values)
 def getHKS(mesh, K, t):
     N = mesh.VPos.shape[0]
+    (eigvalues, eigvectors) = getLaplacianSpectrum(mesh, K)
+    eigssq = eigvectors**2
     hks = np.zeros(N) #Dummy value
-    return hks #TODO: Finish this
+    for i in range(0, N):
+        value = 0
+        for j in range(0, K):
+            value += (float(np.exp(-1*eigvalues[j]*t)) * eigssq[:, j][i])
+        hks[i] = value
+    return hks
 
 ##############################################################
 ##                Parameterization/Texturing               ##
