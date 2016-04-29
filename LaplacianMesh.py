@@ -40,7 +40,7 @@ def getLaplacianMatrixUmbrella(mesh, anchorsIdx):
             if (edgeCommon != None ): #neighbors
                 I.append(i)
                 J.append(j)
-                V.append(-1)
+                V.append(-1.0)
     for x in range(0,K):
         I.append(N+x)
         J.append(anchorsIdx[x])
@@ -160,14 +160,13 @@ def smoothColors(mesh, colors, colorsIdx):
 #Inputs: mesh (polygon mesh object)
 #Returns: Nothing (should update mesh.VPos)
 def doLaplacianSmooth(mesh):
-    L = getLaplacianMatrixUmbrella(mesh, [])
+    N = len(mesh.vertices)
+    L = getLaplacianMatrixUmbrella(mesh, []).tolil()
     #L = getLaplacianMatrixCotangent(mesh, [])
-    Ln = np.copy(L)
-    i = 0
-    for row in L:
-        tempSum = np.sum(row) - row[i]
-        Ln[i, :] = L[i, :]/tempSum
-        i = i + 1
+    Ln = L.copy()
+    for i in range(N):
+        if (L[i, i] != 0):
+            Ln[i, :] = L[i, :]/L[i, i]
     mesh.VPos = mesh.VPos - np.array(Ln.dot(mesh.VPos))
 
 
@@ -176,14 +175,13 @@ def doLaplacianSmooth(mesh):
 #Inputs: mesh (polygon mesh object)
 #Returns: Nothing (should update mesh.VPos)
 def doLaplacianSharpen(mesh):
-    L = getLaplacianMatrixUmbrella(mesh, [])
+    N = len(mesh.vertices)
+    L = getLaplacianMatrixUmbrella(mesh, []).tolil()
     #L = getLaplacianMatrixCotangent(mesh, [])
-    Ln = np.copy(L)
-    i = 0
-    for row in L:
-        tempSum = np.sum(row) - row[i]
-        Ln[i, :] = L[i, :]/tempSum
-        i = i + 1
+    Ln = L.copy()
+    for i in range(N):
+        if (L[i, i] != 0):
+            Ln[i, :] = L[i, :]/L[i, i]
     mesh.VPos = mesh.VPos + np.array(Ln.dot(mesh.VPos))
 
 #Purpose: Given a mesh and a set of anchors, to simulate a minimal surface
@@ -219,7 +217,7 @@ def makeMinimalSurface(mesh, anchors, anchorsIdx):
 #Inputs: mesh (polygon mesh object), K (number of eigenvalues/eigenvectors)
 #Returns: (eigvalues, eigvectors): a tuple of the eigenvalues and eigenvectors
 def getLaplacianSpectrum(mesh, K):
-    A = getLaplacianMatrixUmbrella(mesh, [])
+    A = getLaplacianMatrixCotangent(mesh, [])
     (eigvalues, eigvectors) = eigsh(A.asfptype(), K, which='LM', sigma = 0)
     return (eigvalues, eigvectors)
 
@@ -264,11 +262,8 @@ def getHKS(mesh, K, t):
     (eigvalues, eigvectors) = getLaplacianSpectrum(mesh, K)
     eigssq = eigvectors**2
     hks = np.zeros(N) #Dummy value
-    for i in range(0, N):
-        value = 0
-        for j in range(0, K):
-            value += (float(np.exp(-1*eigvalues[j]*t)) * eigssq[i, j])
-        hks[i] = value
+    for j in range(0, K):
+        hks += (float(np.exp(-1*eigvalues[j]*t)) * eigssq[:, j])
     return hks
 
 ##############################################################
