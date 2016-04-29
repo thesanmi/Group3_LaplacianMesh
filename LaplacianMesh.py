@@ -197,9 +197,9 @@ def makeMinimalSurface(mesh, anchors, anchorsIdx):
 
     N = len(mesh.vertices)
     K = len(anchorsIdx)
-    L = getLaplacianMatrixUmbrella(mesh, anchorsIdx)
-    #L = getLaplacianMatrixCotangent(mesh, anchorsIdx)
-    delta = np.array(L.dot(mesh.VPos))
+    #L = getLaplacianMatrixUmbrella(mesh, [])
+    L = getLaplacianMatrixCotangent(mesh, [])
+    delta = np.zeros((N, 3))
 
     for i in range(0, K):
         index = anchorsIdx[i]
@@ -267,7 +267,7 @@ def getHKS(mesh, K, t):
     for i in range(0, N):
         value = 0
         for j in range(0, K):
-            value += (float(np.exp(-1*eigvalues[j]*t)) * eigssq[:, j][i])
+            value += (float(np.exp(-1*eigvalues[j]*t)) * eigssq[i, j])
         hks[i] = value
     return hks
 
@@ -281,8 +281,17 @@ def getHKS(mesh, K, t):
 #into the mesh of the four points that are to be anchored, in CCW order)
 #Returns: nothing (update mesh.VPos)
 def doFlattening(mesh, quadIdxs):
-    print "TODO"
-    #TODO: Finish this
+    N = mesh.VPos.shape[0]
+    L = getLaplacianMatrixUmbrella(mesh, [])
+    vertices = [[0, 0, 0], [0, 1, 0], [1, 1, 0], [1, 0, 0]]
+    delta = np.zeros((N, 3))
+    for i in range(4):
+        L[quadIdxs[i], :] = 0
+        L[quadIdxs[i], quadIdxs[i]] = 1
+        delta[quadIdxs[i], :] = vertices[i]
+    for j in range(3):
+        mesh.VPos[:, j] = lsqr(L, delta[:, j])[0]
+
 
 #Purpose: Given 4 vertex indices on a quadrilateral, to anchor them to the
 #square and flatten the rest of the mesh inside of that square.  Then, to
@@ -292,8 +301,20 @@ def doFlattening(mesh, quadIdxs):
 #Returns: U (an N x 2 matrix of texture coordinates)
 def getTexCoords(mesh, quadIdxs):
     N = mesh.VPos.shape[0]
-    U = np.zeros((N, 2)) #Dummy value
-    return U #TODO: Finish this
+    L = getLaplacianMatrixUmbrella(mesh, [])
+    vertices = [[0, 0, 0], [0, 1, 0], [1, 1, 0], [1, 0, 0]]
+    delta = np.zeros((N, 3))
+    flatcoords = np.zeros((N, 3))
+    for i in range(4):
+        L[quadIdxs[i], :] = 0
+        L[quadIdxs[i], quadIdxs[i]] = 1
+        delta[quadIdxs[i], :] = vertices[i]
+    for j in range(3):
+        flatcoords[:, j] = lsqr(L, delta[:, j])[0]
+    U = np.zeros((N, 2))
+    U[:, 0] = flatcoords[:, 0]
+    U[:, 1] = flatcoords[:, 1]
+    return U
 
 if __name__ == '__main__':
     print "TODO"
