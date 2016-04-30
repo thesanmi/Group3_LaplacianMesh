@@ -3,6 +3,48 @@ Group Assignment 3
 
 Sanmi Oyenuga (ojo), Clemence Lapeyre, Gray Williams (gmw9)
 
+############################################################################
+Basic Laplacian Mesh Editing
+
+getLaplacianMatrixUmbrella 
+This involved generating the laplacian matrix by creating both the diagonal
+and adjacency terms of the Laplacian in a double for loop. The diagonal was
+inputed as the number of vertex neighbors and any other connected vertex
+points were represented as -1s in the sparce matrix. The anchor points were then
+looped over and placed in correct locations
+
+solveLaplacianMesh
+The Laplacian matrix was calculated either using the cotangent method or 
+umbrella method do obtain the delta coordinates. These were then updated and
+a least squared calculared was utilized to generate the revised mesh positions.
+
+#############################################################################
+getLaplacianMatrixCotangent
+
+This was similar to the umbrella method but with the diagonals computed as
+the sum of entries in each row of the laplacian and the adjacent matrix positions
+computed as a sum of the cotagent angles formed between neighbouring vertices 
+and the adjacent vertices. The anchors were placed the same way
+
+#############################################################################
+smoothColors
+
+This was performed similar to the solveLaplacianMesh but instead with the 
+delta coordinates set to zero to minimze the second derivative everywhere
+
+#############################################################################
+doLaplacianSmooth(-) doLaplacianSharpen (+)
+
+This was performed using the formula V' = V +- LnV. Ln was obtained by 
+dividing each row with by the sum of all the weights of that vertex. 
+
+#############################################################################
+makeMinimalSurface
+Here the delta coordinates from the laplacian was set to zero, and anchors
+were placed at particular positions to hold in the minimal surface with certain
+constraints. This was also performed by anchoring points in the upper square 
+laplalcian matrix as opposed to additional rows at the bottom
+
 #############################################################################
 getLaplacianSpectrum
 This function was simple, it primarily consisted of a call of eigsh on the
