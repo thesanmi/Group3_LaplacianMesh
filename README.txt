@@ -84,3 +84,12 @@ mesh.VPos is flattened inside the unit square.
 getTexCoords
 This function was simply the result of computing the updated points as in
 doFlattening and then returning the first two columns.
+
+
+#############################################################################
+Art Contest
+
+THe file names HomerCreepyAFBlooper.png, ShortHomerBlooper.png and SquashedHomerBlooper.png
+are being submitted for the art contest and were funny or scary/unsetttling results discovered 
+during testing
+
