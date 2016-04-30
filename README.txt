@@ -15,8 +15,8 @@ across the surface as the eigenvalues increased.
 #############################################################################
 doLowpassFiltering
 Computing U_K is as simple as calling getLaplacianSpectrum, and then V' is
-computed according to the formula on the webpage. Denoised meshes can be found
-in our file.
+computed according to the formula on the webpage. Denoised meshes can be seen
+in denoisedhomer.png and denoisedteapot.png.
 
 #############################################################################
 getHeat
